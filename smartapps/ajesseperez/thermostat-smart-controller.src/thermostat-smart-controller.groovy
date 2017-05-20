@@ -30,13 +30,13 @@ preferences {
         input "tempsen", "capability.temperatureMeasurement", title: "Use Which Temperature Sensor", required: true
     }
     section(hidden: true, "Fan Control"){
-        input "fanon", "number", title: "How long to has the fan on?", required: false
-        input "fanoff", "number", title: "How long to has the fan off?", required: false
+        input "fanon", "number", title: "How long to has the fan on?", required: true
+        input "fanoff", "number", title: "How long to has the fan off?", required: true
     }
     section(hidden: true, "Comfort Settings"){
-        input "comfort_modes", "mode", title: "Select Comfort Mode(s)", required: false, multiple: true
-        input "comfort_high", "decimal", title: "Set Comfort High Temp", required: false
-        input "comfort_low", "decimal", title: "Set Comfort Low Temp", required: false
+        input "comfort_modes", "mode", title: "Select Comfort Mode(s)", required: true, multiple: true
+        input "comfort_high", "decimal", title: "Set Comfort High Temp", required: true
+        input "comfort_low", "decimal", title: "Set Comfort Low Temp", required: true
     }
     section(hidden: true, "Semi-Comfort Settings"){
         input "semicomfort_modes", "mode", title: "Select Semi-Comfort Mode(s)", required: false, multiple: true
@@ -74,6 +74,8 @@ def initialized() {
 
 //Initial Checks DONE!
 def intCheck() {
+	def fanonmin = fanon.toInteger()
+    def fanoffmin = fanoff.toInteger()
 	def tempState = tempsen.currentTemperature.toBigDecimal()
     def thermodeState = thermostat.currentState("thermostatMode")
     def therfanmodeState = thermostat.currentState("thermostatFanMode")
@@ -82,15 +84,15 @@ def intCheck() {
     //log.debug "Thermostat Fan Mode is ${therfanmodeState.value}"
     
     if (location.mode in comfort_modes) {
-    	log.info "Switching to Comfort Mode."
+    	sendNotificationEvent("Switching to Comfort Mode.")
         state.comfortLVL = "Comfort Mode"
     }
     else if (location.mode in semicomfort_modes) {
-    	log.info "Switching to Semi-Comfort Mode."
+    	sendNotificationEvent("Switching to Semi-Comfort Mode.")
         state.comfortLVL = "Semi-Comfort Mode"
     }
     else if (location.mode in night_modes) {
-    	log.info "Switching to Night Mode."
+    	sendNotificationEvent("Switching to Night Mode.")
         state.comfortLVL = "Night Mode"
     }
     else {
@@ -104,15 +106,15 @@ def modeChangeHandler(evt){
 	log.debug "modeChangeHandler called: $evt.value"
     
     if (location.mode in comfort_modes) {
-    	log.info "Switching to Comfort Mode."
+    	sendNotificationEvent("Switching to Comfort Mode.")
         state.comfortLVL = "Comfort Mode"
     }
     else if (location.mode in semicomfort_modes) {
-    	log.info "Switching to Semi-Comfort Mode."
+    	sendNotificationEvent("Switching to Semi-Comfort Mode.")
         state.comfortLVL = "Semi-Comfort Mode"
     }
     else if (location.mode in night_modes) {
-    	log.info "Switching to Night Mode."
+    	sendNotificationEvent("Switching to Night Mode.")
         state.comfortLVL = "Night Mode"
     }
     else {
@@ -127,43 +129,43 @@ def temperaturehandler(evt){
     
     if (state.comfortLVL == "Comfort Mode"){
     	if (tempState > comfort_high) {
-        	log.debug "Temperature is Higher Than Desired for Comfort Settings, Setting Thermostat to Cool"
+        	sendNotificationEvent("Temperature is Higher Than Desired for Comfort Settings, Setting Thermostat to Cool")
             thermostat.setThermostatMode("cool")
         }
         else if (tempState < comfort_low) {
-        	log.debug "Temperature is Lower Than Desired for Comfort Settings, Setting Thermostat to Heat"
+        	sendNotificationEvent("Temperature is Lower Than Desired for Comfort Settings, Setting Thermostat to Heat")
             thermostat.setThermostatMode("heat")
         }
         else {
-        	log.debug "Temperature is within Desired Comfort Settings, Setting Thermostat to Off"
+        	sendNotificationEvent("Temperature is within Desired Comfort Settings, Setting Thermostat to Off")
             thermostat.setThermostatMode("off")
         }
     }
     else if (state.comfortLVL == "Semi-Comfort Mode") {
     	if (tempState > semicomfort_high) {
-        	log.debug "Temperature is Higher Than Desired for Semi-Comfort Settings, Setting Thermostat to Cool"
+        	sendNotificationEvent("Temperature is Higher Than Desired for Semi-Comfort Settings, Setting Thermostat to Cool")
             thermostat.setThermostatMode("cool")
         }
         else if (tempState < semmicomfort_low) {
-        	log.debug "Temperature is Lower Than Desired for Semi-Comfort Settings, Setting Thermostat to Heat"
+        	sendNotificationEvent("Temperature is Lower Than Desired for Semi-Comfort Settings, Setting Thermostat to Heat")
             thermostat.setThermostatMode("heat")
         }
         else {
-        	log.debug "Temperature is within Desired Semi-Comfort Settings, Setting Thermostat to Off"
+        	sendNotificationEvent("Temperature is within Desired Semi-Comfort Settings, Setting Thermostat to Off")
             thermostat.setThermostatMode("off")
     }
     }
     else if (state.comfortLVL == "Night Mode") {
     	if (tempState > night_high) {
-        	log.debug "Temperature is Higher Than Desired for Night Comfort Settings, Setting Thermostat to Cool"
+        	sendNotificationEvent("Temperature is Higher Than Desired for Night Comfort Settings, Setting Thermostat to Cool")
             thermostat.setThermostatMode("cool")
         }
         else if (tempState < night_low) {
-        	log.debug "Temperature is Lower Than Desired for Night Comfort Settings, Setting Thermostat to Heat"
+        	sendNotificationEvent("Temperature is Lower Than Desired for Night Comfort Settings, Setting Thermostat to Heat")
             thermostat.setThermostatMode("heat")
         }
         else {
-        	log.debug "Temperature is within Desired Night Comfort Settings, Setting Thermostat to Off"
+        	sendNotificationEvent("Temperature is within Desired Night Comfort Settings, Setting Thermostat to Off")
             thermostat.setThermostatMode("off")
     	}
     }
@@ -214,24 +216,28 @@ def setpointCheck(){
 //
 //FanStuff
 //
+
 def thermostatfanmodehandler(evt){
-	log.debug "FanMode Event Occured"
-	if (thermostat.thermostatFanMode == "auto") {
-    	log.debug "AUTOMODE"
+	if (evt.value == "auto") {
+    	log.debug "Fan is off, Switching to On in a bit"
         state.fanMode = "Auto Mode"
         runIn(fanon * 60, fanSwitchOn)
     }
-    else if (thermostat.thermostatFanMode == "on") {
-    	log.debug "ONMODE"
+    else if (evt.value == "on") {
+        log.debug "Fan is on, Switching to Off in a bit"
     	state.fanMode = "On Mode"
-        runIn(fanoff * 60, fanSwitchOff)
+        runIn(fanoff * 60, fanSwitchAuto)
     }
 }
 
-def fanSwichOn(){
-	log.debug "Fan Switcher was ran ON."
+def fanSwitchOn(){
+	sendNotificationEvent("Fan Switcher was ran, Turning Thermostate Fan ON.")
+    log.debug "Fan Switcher was ran, Turning Thermostate Fan ON."
+    thermostat.setThermostatFanMode("on")
 }
 
-def fanSwichauto(){
-	log.debug "Fan Switcher was ran AUTO."
+def fanSwitchAuto(){
+	sendNotificationEvent("Fan Switcher was ran, Turning Thermostate Fan to AUTO.")
+    log.debug "Fan Switcher was ran, Turning Thermostate Fan Auto."
+    thermostat.setThermostatFanMode("auto")
 }
