@@ -74,7 +74,7 @@ def initialized() {
 
 //Initial Checks DONE!
 def intCheck() {
-	def tempState = tempsen.currentTemperature
+	def tempState = tempsen.currentTemperature.toBigDecimal()
     def thermodeState = thermostat.currentState("thermostatMode")
     def therfanmodeState = thermostat.currentState("thermostatFanMode")
     //log.debug "Temperature is ${tempState.value} Degrees"
@@ -121,20 +121,55 @@ def modeChangeHandler(evt){
     }
 }
 
-//Turns off thermostate if within desired settings
+//Turns off thermostate if within desired settings DONE!
 def temperaturehandler(evt){
-	def tempState = tempsen.currentTemperature
-    log.debug "Temperature is ${tempState.value} Degrees"
+	def tempState = tempsen.currentTemperature.toBigDecimal()
     
-        if (tempState > comfort_high) {
-        	log.debug "Temperature is Higher Than Desired for Comfort Settings"
+    if (state.comfortLVL == "Comfort Mode"){
+    	if (tempState > comfort_high) {
+        	log.debug "Temperature is Higher Than Desired for Comfort Settings, Setting Thermostat to Cool"
+            thermostat.setThermostatMode(cool)
         }
         else if (tempState < comfort_low) {
-        	log.debug "Temperature is Lower Than Desired for Comfort Settings"
+        	log.debug "Temperature is Lower Than Desired for Comfort Settings, Setting Thermostat to Heat"
+            thermostat.setThermostatMode(heat)
         }
         else {
-        	log.debug "Temperature is within Desired Comfort Settings"
+        	log.debug "Temperature is within Desired Comfort Settings, Setting Thermostat to Off"
+            thermostat.setThermostatMode(off)
         }
+    }
+    else if (state.comfortLVL == "Semi-Comfort Mode") {
+    	if (tempState > semicomfort_high) {
+        	log.debug "Temperature is Higher Than Desired for Semi-Comfort Settings, Setting Thermostat to Cool"
+            thermostat.setThermostatMode(cool)
+        }
+        else if (tempState < semmicomfort_low) {
+        	log.debug "Temperature is Lower Than Desired for Semi-Comfort Settings, Setting Thermostat to Heat"
+            thermostat.setThermostatMode(heat)
+        }
+        else {
+        	log.debug "Temperature is within Desired Semi-Comfort Settings, Setting Thermostat to Off"
+            thermostat.setThermostatMode(off)
+    }
+    }
+    else if (state.comfortLVL == "Night Mode") {
+    	if (tempState > night_high) {
+        	log.debug "Temperature is Higher Than Desired for Night Comfort Settings, Setting Thermostat to Cool"
+            thermostat.setThermostatMode(cool)
+        }
+        else if (tempState < night_low) {
+        	log.debug "Temperature is Lower Than Desired for Night Comfort Settings, Setting Thermostat to Heat"
+            thermostat.setThermostatMode(heat)
+        }
+        else {
+        	log.debug "Temperature is within Desired Night Comfort Settings, Setting Thermostat to Off"
+            thermostat.setThermostatMode(off)
+    	}
+    }
+    else {
+    	log.error "Hmmmm Something went wrong in temperaturehandler....."
+    }
 }
 
 //Monitors Mode of Thermostate, When Change occurs it checks setpoint after 30 sec. DONE!
@@ -144,7 +179,7 @@ def thermostatmodehandler(evt){
     runIn(30,setpointCheck)
 }
 
-//This sets the thermostat set points, Skips if Thermostat is off
+//This sets the thermostat set points, Skips if Thermostat is off DONE!
 def setpointCheck(){
     
     if (thermostat.currentState("thermostatMode") == off) {
