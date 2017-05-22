@@ -68,14 +68,11 @@ def initialized() {
     subscribe(location, "mode", modeChangeHandler)
     subscribe(thermostat, "thermostatfanmode", thermostatfanmodehandler)
     subscribe(thermostat, "thermostatmode", thermostatmodehandler)
-    runEvery10Minutes(setpointCheck)
     intCheck()
 }
 
 //Initial Checks DONE!
 def intCheck() {
-	def fanonmin = fanon.toInteger()
-    def fanoffmin = fanoff.toInteger()
 	def tempState = tempsen.currentTemperature.toBigDecimal()
     def thermodeState = thermostat.currentState("thermostatMode")
     def therfanmodeState = thermostat.currentState("thermostatFanMode")
